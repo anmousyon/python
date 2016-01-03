@@ -39,13 +39,12 @@ class LinkedList:
 
     def __init__ (self):
         self.start = None
-        self.send = None
+        self.end = None
         self.size = 0
         self.arrayLength = 1
         self.current = None
         self.currentIndex = 0
         self.parentIndex = 0
-        self.temp = None
         self.toInsert = None
 
     def isEmpty(self):
@@ -65,49 +64,50 @@ class LinkedList:
         numElements = (self.arrayLength/2) + self.end.size
         return numElements
 
-    def findParent(self):
-        if (self.currentIndex % 2) == 0:
-            self.parentIndex = self.currentIndex / 2
+    def findParent(self, cIndex):
+        if (cIndex % 2) == 0:
+            pIndex = cIndex / 2
         else:
-            self.parentIndex = (self.currentIndex - 1) /2
+            pIndex = (cIndex - 1) /2
+        return pIndex
 
     def findChild(self, parent):
         return parent * 2
 
-    def swap(self, x):
-        self.findParent()
+    def swap(self, x, c, cIndex):
+        pIndex = self.findParent(cIndex)
 
-        if self.current.prev.data[self.parentIndex] > self.current.data[self.currentIndex]:
-            self.temp = self.current.prev.data[self.parentIndex]
-            self.current.prev.data[self.parentIndex] = self.x
-            self.current.data[self.currentIndex] = self.temp
-            self.current = self.current.prev
-            return self.parentIndex
+        if c.prev.data[pIndex] > c.data[cIndex]:
+            temp = c.prev.data[pIndex]
+            c.prev.data[pIndex] = x
+            c.data[cIndex] = temp
+            c = c.getPrev()
+            return pIndex
         else:
             return -1
 
-    def sort(self, x):
-        while self.current.prev != None and self.currentIndex != -1 :
-            self.currentIndex = self.swap(x)
+    def sort(self, x, c):
+        cIndex = 0
+        while c.getPrev() != None and cIndex != -1 :
+            cIndex = c.size-1
+            cIndex = self.swap(x, c, cIndex)
 
-    def add(self, x):
-        self.current.data[self.current.size] = x
-        self.currentIndex = self.current.size
-        self.current.size += 1
+    def add(self, x, c):
+        c.data[c.size] = x
+        c.size += 1
 
     def insert(self, x):
 
         if self.isEmpty():
-            self.newArray = np.zeros(1)
-            self.appendArray(self.newArray)
+            newArray = np.zeros(1)
+            self.appendArray(newArray)
 
         if self.end.size == self.arrayLength :
-            self.newArray = np.zeros((self.arrayLength*2))
-            self.appendArray(self.newArray)
+            newArray = np.zeros((self.arrayLength*2))
+            self.appendArray(newArray)
 
-        self.current = self.end
-        self.add(x)
-        self.sort(x)
+        self.add(x, self.end)
+        self.sort(x, self.end)
 
     def findMin(self):
         min = -1
@@ -121,49 +121,50 @@ class LinkedList:
 
         return min
 
-    def deleteSort(self, parent):
+    def deleteSort(self, parent, c):
         left = self.findChild(parent)
         right = left + 1
-        if self.current.next != None:
-            if self.current.next.data[left] < self.current.next.data[right]:
+        if c.next != None:
+            if c.next.data[left] < c.next.data[right]:
                 child = left
             else:
                 child = right
-            if self.current.next.data[child] < self.current.data[parent] and self.current.next.data[child] != 0 :
-                temp = self.current.data[parent]
-                self.current.data[parent] = self.current.next.data[child]
-                self.current.next.data[child] = self.temp
-                self.current = self.current.getNext()
-                self.deleteSort(child)
+            if c.next.data[child] < c.data[parent] and c.next.data[child] != 0 :
+                temp = c.data[parent]
+                c.data[parent] = c.next.data[child]
+                c.next.data[child] = temp
+                c = c.getNext()
+                self.deleteSort(child, c)
             else:
                 return
-        elif self.current == self.end:
-            self.end.data[0] = 0
+        elif c == self.end:
+            return
 
         else:
             return
 
-    def deleteMin(self):
+    def deleteMin(self, s, e):
         min = self.findMin()
-        self.current =  self.start
+
         if self.isEmpty():
             raise Exception("empty")
-        elif self.start == self.end:
-            self.end.data[0] = 0
-            self.end.size -= 1
+        elif s == e:
+            e.data[0] = 0
+            e.size -= 1
             self.arrayLength -= 1
-            self.start = None
-            self.end = None
+            s = None
+            e = None
             return min
         else:
-            self.current.data[0] = self.end.data[self.end.size -1]
-            self.end.data[self.end.size-1] = 0
-            self.end.size  -= 1
+            print (e == None)
+            s.data[0] = e.data[e.size -1]
+            e.data[e.size-1] = 0
+            e.size  -= 1
             self.arrayLength -= 1
-            self.deleteSort(0)
+            self.deleteSort(0, s)
 
-        if self.end.size == 0:
-            self.end = self.end.getPrev()
+        if e.size == 0:
+            self.end = e.getPrev()
 
         return min
 
@@ -172,7 +173,7 @@ class LinkedList:
         self.size += 1
         if self.start == None:
             self.start = nptr
-            self.end =  self.start
+            self.end = self.start
             self.arrayLength = 1
         else:
             self.arrayLength *= 2
@@ -181,18 +182,18 @@ class LinkedList:
             self.end = nptr
 
     def insertArray(self, val, pos):
-        self.nptr = self.Node(val, None, None, 0)
-        self.ptr = self.start
+        nptr = self.Node(val, None, None, 0)
+        ptr = self.start
         pos -= 1
         for i in range (0, size):
             if i == pos:
-                self.temp = self.ptr.getNext()
-                self.ptr.setNext(self.nptr)
-                self.nptr.setNext(self.temp)
-                self.nptr.setPrev(self.ptr)
-                self.temp.setPrev(self.nptr)
+                temp = ptr.getNext()
+                ptr.setNext(nptr)
+                nptr.setNext(temp)
+                nptr.setPrev(ptr)
+                temp.setPrev(nptr)
                 break
-            self.ptr = self.ptr.getNext()
+            ptr = ptr.getNext()
         self.size += 1
 
     def deleteArray(self, pos):
@@ -201,25 +202,25 @@ class LinkedList:
             self.size -= 1
             return
         if pos == self.size:
-            self.s = self.start
-            self.t = self.start
-            while self.s != self.end:
-                self.t = self.s
-                self.s = self.s.getNext()
-            self.end = self.t;
+            s = self.start
+            t = self.start
+            while s != self.end:
+                t = s
+                s = s.getNext()
+            self.end = t;
             self.end.setNext(None)
             self.size -= 1
             return
-        self.ptr = self.start
+        ptr = self.start
         pos -= 1
         for i in range (1, (self.size-1)):
             if i == pos:
-                self.temp = self.ptr.getNext()
-                self.temp = self.temp.getNext()
-                self.ptr.setNext(self.temp)
-                self.temp.setPrev(self.ptr)
+                temp = ptr.getNext()
+                temp = temp.getNext()
+                ptr.setNext(temp)
+                temp.setPrev(ptr)
                 break
-            self.ptr = self.ptr.getNext()
+            ptr = ptr.getNext()
         self.size -= 1
 
     def display(self):
@@ -231,24 +232,24 @@ class LinkedList:
         if self.start.next == None:
             print(self.start.data)
             return
-        self.ptr = self.start
+        ptr = self.start
         #print (self.start.data)
         #self.ptr = self.start.getNext()
-        while self.ptr != None:
-            print (self.ptr.data)
-            self.ptr = self.ptr.getNext()
+        while ptr != None:
+            print (ptr.data)
+            ptr = ptr.getNext()
             print ("\n")
 
 
 print ("hello world")
 ll = LinkedList()
 for i in range(1, 50):
-    if i % 2 == 0:
-        ll.insert(i/2)
+    if i % 3 == 0:
+        ll.insert(i/3)
     else:
         ll.insert(i)
 
-#for i in range (0, 4999):
-#    ll.deleteMin()
+#for i in range (0, 49):
+#    ll.deleteMin(ll.start, ll.end)
 
 ll.display()
