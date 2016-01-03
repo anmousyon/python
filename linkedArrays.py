@@ -233,15 +233,11 @@ class LinkedList:
             print(self.start.data)
             return
         ptr = self.start
-        #print (self.start.data)
-        #self.ptr = self.start.getNext()
         while ptr != None:
             print (ptr.data)
             ptr = ptr.getNext()
             print ("\n")
 
-
-print ("hello world")
 ll = LinkedList()
 for i in range(1, 50):
     if i % 3 == 0:
