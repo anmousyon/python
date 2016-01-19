@@ -1,42 +1,39 @@
 #!/usr/bin/env python
 import numpy as np
 
-class LinkedList:
-    class Node:
+class Node:
 
-        def __init__(self, d, n, p, s):
-            self.prev = p
-            self.next = n
-            self.data = d
-            self.size = s
+	#initializes node instance with predefined values
+	def __init__(self, data, next = None, prev = None, size = 0):
+           self.prev = prev
+           self.next = next
+           self.data = data
+           self.size = size
 
-        def setNext(self, n):
-            self.next = n
+	def setNext(self, next):
+            self.next = next
 
-        def setPrev(self, p):
-            self.prev = p
+	def setPrev(self, prev):
+            self.prev = prev
 
-        def setData(self, d):
-            self.data = d
+	def setData(self, data):
+            self.data = data
 
-        def setSize(self, s):
-            self.size = s
+	def setSize(self, size):
+            self.size = size
 
-        def getNext(self):
+	def getNext(self):
             return self.next
 
-        def getPrev(self):
+	def getPrev(self):
             return self.prev
 
-        def getData(self, i):
-            if i < self.size:
-                return self.data[i]
-            else:
-                return -1
-
-        def getSize(self):
+	def getSize(self):
             return self.size
 
+class LinkedArray:
+
+	#intializes LinkedArrays instance then sets starting values
     def __init__ (self):
         self.start = None
         self.end = None
@@ -47,36 +44,42 @@ class LinkedList:
         self.parentIndex = 0
         self.toInsert = None
 
+	#checks if start is null
     def isEmpty(self):
-        return self.start == None
+        return self.start is None
 
+	#deletes all the nodes in the LinkedArrays
     def makeEmpty(self):
         self.current = self.end
-        while self.end.getPrev() != None:
+        
+	while self.end.getPrev():
             self.current = self.end.getPrev()
-        self.end = None
+        
+	self.end = None
         self.start = None
 
     def getSize(self):
         return self.size
 
+	#returns the amount of total elements in the priority queue
     def size(self):
-        numElements = (self.arrayLength/2) + self.end.size
+        numElements = (self.arrayLength/2) + self.end.size #this takes all the availabe spaces, takes away the last array since it might not be full then adds the filled spaces from the last array
         return numElements
 
+	#finds the parent of the current index
     def findParent(self, cIndex):
-        if (cIndex % 2) == 0:
-            pIndex = cIndex / 2
-        else:
-            pIndex = (cIndex - 1) /2
-        return pIndex
+	    pIndex = cIndex // 2
+	    return pIndex
 
+	#finds the child of the current index
     def findChild(self, parent):
         return parent * 2
 
+	#swaps the parent and child if necessary (will swap if child is smaller than parent)
     def swap(self, x, c, cIndex):
         pIndex = self.findParent(cIndex)
 
+	#compares parent to child
         if c.prev.data[pIndex] > c.data[cIndex]:
             temp = c.prev.data[pIndex]
             c.prev.data[pIndex] = x
@@ -86,32 +89,41 @@ class LinkedList:
         else:
             return -1
 
+	#calls swap until the queue is sorted
     def sort(self, x, c):
         cIndex = 0
-        while c.getPrev() != None and cIndex != -1 :
+        while c.getPrev() and cIndex != -1 :
             cIndex = c.size-1
             cIndex = self.swap(x, c, cIndex)
 
+	#adds the element to the end of the queue
     def add(self, x, c):
         c.data[c.size] = x
         c.size += 1
 
+	#checks if array needs to be created (and calls for creation if necessary) then calls to add element to queue then calls for sort
     def insert(self, x):
 
+	#if there are no arrays, make one with size one (first array)
         if self.isEmpty():
             newArray = np.zeros(1)
             self.appendArray(newArray)
 
+	#if last array is full make a new one twice the size
         if self.end.size == self.arrayLength :
             newArray = np.zeros((self.arrayLength*2))
             self.appendArray(newArray)
-
+	
+	#add it to the end of the queue then sort the queue
         self.add(x, self.end)
         self.sort(x, self.end)
 
+	#finds the min element in the queue (should be element in first array if sorted correctly)
     def findMin(self):
-        min = -1
-
+	#set min to -1 so that deletemin will catch any errors trying to get start.data[0]
+	min = -1
+	
+	#if its empty tell the user and exit
         if self.isEmpty():
             print ("empty")
             return
@@ -121,34 +133,47 @@ class LinkedList:
 
         return min
 
+	#sorts the array after deletion of min element occurs
     def deleteSort(self, parent, c):
+	
+	#set the left index to its first child and right index to next element (second child)
         left = self.findChild(parent)
         right = left + 1
-        if c.next != None:
-            if c.next.data[left] < c.next.data[right]:
-                child = left
-            else:
-                child = right
-            if c.next.data[child] < c.data[parent] and c.next.data[child] != 0 :
-                temp = c.data[parent]
-                c.data[parent] = c.next.data[child]
-                c.next.data[child] = temp
-                c = c.getNext()
-                self.deleteSort(child, c)
-            else:
+
+	#if there is a next array, compare itself to its children. if it is greater than either of them, switch 
+	if c.next:
+		#if left is larger switch left and parent
+		if c.next.data[left] < c.data[parent] and c.next.data[left] != 0 :
+		    temp = c.data[parent]
+		    c.data[parent] = c.next.data[left]
+		    c.next.data[left] = temp
+		    c = c.getNext()
+		    self.deleteSort(left, c)
+		#if right is larger, switch right and parent
+	    	elif c.next.data[right] < c.data[parent] and c.next.data[right] != 0:
+		    temp = c.data[parent]
+		    c.data[parent] = c.next.data[right]
+		    c.next.data[right] = temp
+		    c = c.getNext()
+		    self.deleteSort(right, c)
                 return
-        elif c == self.end:
-            return
+	#if were at the last array, it has no child, so stop
+	elif c is self.end:
+		return
+	#if nothing worked, just exit
+	else:
+		return
 
-        else:
-            return
-
+	#delete the minimum element 
     def deleteMin(self, s, e):
+	    #set min to the min element
         min = self.findMin()
-
+	
+	#if
         if self.isEmpty():
             raise Exception("empty")
-        elif s == e:
+        
+        elif s is e:
             e.data[0] = 0
             e.size -= 1
             self.arrayLength -= 1
@@ -169,9 +194,9 @@ class LinkedList:
         return min
 
     def appendArray(self, val):
-        nptr = self.Node(val, None, None, 0)
+        nptr = Node(val)
         self.size += 1
-        if self.start == None:
+        if self.isEmpty():
             self.start = nptr
             self.end = self.start
             self.arrayLength = 1
@@ -180,22 +205,7 @@ class LinkedList:
             self.end.next = nptr
             nptr.prev = self.end
             self.end = nptr
-
-    def insertArray(self, val, pos):
-        nptr = self.Node(val, None, None, 0)
-        ptr = self.start
-        pos -= 1
-        for i in range (0, size):
-            if i == pos:
-                temp = ptr.getNext()
-                ptr.setNext(nptr)
-                nptr.setNext(temp)
-                nptr.setPrev(ptr)
-                temp.setPrev(nptr)
-                break
-            ptr = ptr.getNext()
-        self.size += 1
-
+    
     def deleteArray(self, pos):
         if pos == 1:
             self.start = self.start.getNext()
@@ -227,21 +237,21 @@ class LinkedList:
         if self.size == 0:
             print ("empty")
             return
-        if self.start == None:
+        if self.isEmpty():
             return
-        if self.start.next == None:
+        if self.start.next is None:
             print(self.start.data)
             return
         ptr = self.start
-        while ptr != None:
+        while ptr:
             print (ptr.data)
             ptr = ptr.getNext()
             print ("\n")
 
-ll = LinkedList()
+ll = LinkedArray()
 for i in range(1, 50):
-    if i % 3 == 0:
-        ll.insert(i/3)
+    if i % 2 == 0:
+        ll.insert(i/2)
     else:
         ll.insert(i)
 
