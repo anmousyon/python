@@ -61,6 +61,7 @@ def tweet_post(title, url, subid):
         api.update_status(post) #post the tweet
     except:
         print('Tweet not posted. Check Issue. Length= ', len(post))
+        return
 
     postedTweets.append(subid)
     update_db()
@@ -196,6 +197,5 @@ def update_db():
 
 if __name__ == "__main__":
     init_db()
-    while True:
-        leagueoflegends()
+    leagueoflegends()
 
