@@ -10,12 +10,13 @@ from pyshorteners import Shortener
 postedTweets = []
 
 redditObj = praw.Reddit('score poster')
-redditObj.login('anmousyony', 'buffalo12')
 
 keys = []
 
 with open('keys.txt') as keys_file:
         keys = keys_file.readlines()
+
+redditObj.login(keys[4], keys[5])
 
 #Reddit API function calls
 
