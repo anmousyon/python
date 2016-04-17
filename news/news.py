@@ -6,10 +6,10 @@ from urllib.parse import urlparse
 import re
 import json
 import requests
+import cherrypy
 
 def keys():
     key = []
-
     with open('keys.txt') as keys_file:
         key = keys_file.readlines()
     return key
@@ -18,15 +18,7 @@ def redditlogin(key):
     r = praw.Reddit('news checker')
     r.login(key[1], key[2])
     return r
-'''
-def getNewspaperContent():
-    bn = newspaper.build('http://breakingnews.com') 
-    for article in bn.articles:
-        print(article.url)
-    for category in bn.category_urls():
-        print(category)
-    return bn
-'''
+
 def readSites():
     with open('sites.txt') as sites_file:
         sites = [word.strip() for word in sites_file]
@@ -126,7 +118,13 @@ def checkSentiment(posts, sentiment_dict):
         sentiment_dict[post] = top
     return sentiment_dict
 
-def main():
+key = []
+site_list = []
+site_dict = {}
+posts_list = []
+sentiment_dict = {}
+
+def feeling():
     key = keys()
     r = redditlogin(key)
     site_list = readSites()
@@ -140,7 +138,14 @@ def main():
     #newspaper = getNewspaperContent()
     site_dict = getPostContent(r, site_list, site_dict)
     crosscheck(site_list, site_dict)
+    return 'done'
 
-    print('done')
+class setFeeling(object):
+    @cherrypy.expose
+    def index(self):
+        feeling()
+        return sentiment_dict
 
-main()
+
+if __name__ == '__main__':
+   cherrypy.quickstart(setFeeling())
