@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 import re
 import json
 import requests
-import cherrypy
 
 def keys():
     key = []
@@ -56,19 +55,16 @@ def from_important(site, sites):
     #print(sites)
     if site in sites:
         return True
-    else:
-        print('not in list')
 
-def getPostContent(reddit, list_of_sites, site_dict):
-    posts = reddit.get_subreddit('worldnews')
+def getPostContent(sub_name, reddit, list_of_sites, site_dict):
+    posts = reddit.get_subreddit(sub_name)
     for post in posts.get_hot(limit=15):
         site_name = post.url
         site_name = urlparse(site_name)[1]
         #check_and_add_http(site_name)
         site_name = 'http://' + site_name.strip()
-        print(site_name)
+        #print(site_name)
         if from_important(site_name, list_of_sites):
-            print('added')
             if not site_dict[site_name]:
                 site_dict[site_name] = list()
                 site_dict[site_name].append(post.title)
@@ -79,8 +75,9 @@ def getPostContent(reddit, list_of_sites, site_dict):
 def crosscheck(sites, site_dict):
     for site in sites:
         if site in site_dict.keys():
-            print(site)
-            print(site_dict[site])
+            #print(site)
+            #print(site_dict[site], 5)
+            None
 
 def checkSentiment(posts, sentiment_dict):
     for post in posts:
@@ -90,24 +87,29 @@ def checkSentiment(posts, sentiment_dict):
         neut = 0
         top = ''
         flat_comments = praw.helpers.flatten_tree(post_id.comments)
+        flat_comments[:10]
         for comment in flat_comments:
             if not isinstance(comment, praw.objects.MoreComments):
                 commenttext = ("text=" + (comment.body).strip()).encode("utf-8")
-                url = "http://text-processing.com/api/sentiment/"
-                json_result = requests.post(url, data=commenttext)
-                parsed_json = json_result.json()
-                rating = parsed_json['label']
+                #print(commenttext)
+                #url = "http://text-processing.com/api/sentiment/"
+                #json_result = requests.post(url, data=commenttext)
+                #parsed_json = json_result.json()
+                #rating = parsed_json['label']
+                rating = 'pos'
                 rating = rating.strip()
-                print(parsed_json['label'])
+                #print(parsed_json['label'])
                 if(rating == 'pos'):
                     pos += 1
                 elif(rating == 'neg'):
                     neg += 1
                 elif(rating == 'neutral'):
                     neut += 1
+                '''
                 print('pos = {}'.format(pos))
                 print('neg = {}'.format(neg))
                 print('neutral = {}'.format(neut))
+                '''
                 top = max(pos, neg, neut)
         if(top == pos):
             top = 'pos'
@@ -118,34 +120,37 @@ def checkSentiment(posts, sentiment_dict):
         sentiment_dict[post] = top
     return sentiment_dict
 
+def print_sentiment_dict(sd):
+    for x in sd:
+        print(x[:30] + "...")
+        print(sd[x])
+        print()
+
 key = []
 site_list = []
 site_dict = {}
 posts_list = []
 sentiment_dict = {}
 
-def feeling():
+def feeling(sub_name):
     key = keys()
     r = redditlogin(key)
     site_list = readSites()
     site_dict = makeSiteDict(site_list)
-    print(site_dict)
-    posts_list = r.get_subreddit('worldnews')
+    #print(site_dict)
+    posts_list = r.get_subreddit(sub_name)
     post_dict = makePostDict(posts_list)
     sentiment_dict = makeSentimentDict(post_dict)
     sentiment_dict = checkSentiment(post_dict, sentiment_dict)
-    print(sentiment_dict)
+    print_sentiment_dict(sentiment_dict)
     #newspaper = getNewspaperContent()
-    site_dict = getPostContent(r, site_list, site_dict)
+    site_dict = getPostContent(sub_name, r, site_list, site_dict)
     crosscheck(site_list, site_dict)
     return 'done'
 
-class setFeeling(object):
-    @cherrypy.expose
-    def index(self):
-        feeling()
-        return sentiment_dict
-
-
-if __name__ == '__main__':
-   cherrypy.quickstart(setFeeling())
+sub = input('Which subreddit do you want to analyse? ')
+print('Alright, hold on a bit.')
+tasks = [feeling]
+data = str(sub.strip())
+print(data)
+feeling(data)
