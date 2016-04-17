@@ -31,7 +31,7 @@ def makeSiteDict(sites):
 
 def makePostDict(posts):
     post_dict = {}
-    for post in posts.get_hot(limit=15):
+    for post in posts.get_hot(limit=5):
         post_dict.update({post.title:post})
     return post_dict
 
@@ -58,28 +58,25 @@ def from_important(site, sites):
 
 def getPostContent(sub_name, reddit, list_of_sites, site_dict):
     posts = reddit.get_subreddit(sub_name)
-    for post in posts.get_hot(limit=15):
+    for post in posts.get_hot(limit=5):
         site_name = post.url
         site_name = urlparse(site_name)[1]
         #check_and_add_http(site_name)
         site_name = 'http://' + site_name.strip()
         #print(site_name)
-        if from_important(site_name, list_of_sites):
-            if not site_dict[site_name]:
-                site_dict[site_name] = list()
-                site_dict[site_name].append(post.title)
-            else:
-                site_dict[site_name].append(post.title)
+        if not site_name in site_dict:
+            site_dict.update({site_name:None})
+        if not site_dict[site_name]:
+            site_dict[site_name] = post.title
     return site_dict
 
-def crosscheck(sites, site_dict):
-    for site in sites:
-        if site in site_dict.keys():
-            #print(site)
-            #print(site_dict[site], 5)
-            None
+def crosscheck(sentiment_dict):
+    site_sentiment_dict = {}
+    for post in sentiment_dict:
+        site_sentiment_dict.update({sentiment_dict[post][0]:sentiment_dict[post][1]})
+    return site_sentiment_dict
 
-def checkSentiment(posts, sentiment_dict):
+def checkSentiment(posts, site_dict, sentiment_dict):
     for post in posts:
         post_id = posts[post]
         pos = 0
@@ -87,7 +84,8 @@ def checkSentiment(posts, sentiment_dict):
         neut = 0
         top = ''
         flat_comments = praw.helpers.flatten_tree(post_id.comments)
-        flat_comments[:10]
+        flat_comments[:1]
+        comments_dict.update({post:None})
         for comment in flat_comments:
             if not isinstance(comment, praw.objects.MoreComments):
                 commenttext = ("text=" + (comment.body).strip()).encode("utf-8")
@@ -105,32 +103,44 @@ def checkSentiment(posts, sentiment_dict):
                     neg += 1
                 elif(rating == 'neutral'):
                     neut += 1
-                '''
-                print('pos = {}'.format(pos))
-                print('neg = {}'.format(neg))
-                print('neutral = {}'.format(neut))
-                '''
                 top = max(pos, neg, neut)
+                comments_dict[post] = list()
+                comments_dict[post].append((comment.body.strip()).encode("utf-8"))
         if(top == pos):
             top = 'pos'
         elif(top == neg):
             top ='neg'
         elif(top == neut):
             top = 'neutral'
-        sentiment_dict[post] = top
+        site_name = 'http://' + urlparse(posts[post].url)[1].strip()
+        sentiment_dict[post] = [site_name, top]
     return sentiment_dict
 
 def print_sentiment_dict(sd):
     for x in sd:
-        print(x[:30] + "...")
-        print(sd[x])
+        print(x[:50] + "...")
+        print(sd[x][1])
         print()
+
+def print_site_sentiment_dict(ssd):
+    for x in ssd:
+        print(x[:50] + "...")
+        print(ssd[x])
+        print()
+
+def print_pos_comment_dict(cd, sentiment_dict):
+    for post in sentiment_dict:
+        if(sentiment_dict[post][1][:50] == 'pos'):
+            for x in cd[post]:
+                print(x)
+            return;
 
 key = []
 site_list = []
 site_dict = {}
 posts_list = []
 sentiment_dict = {}
+comments_dict = {}
 
 def feeling(sub_name):
     key = keys()
@@ -140,12 +150,14 @@ def feeling(sub_name):
     #print(site_dict)
     posts_list = r.get_subreddit(sub_name)
     post_dict = makePostDict(posts_list)
+    site_dict = getPostContent(sub_name, r, site_list, site_dict)
     sentiment_dict = makeSentimentDict(post_dict)
-    sentiment_dict = checkSentiment(post_dict, sentiment_dict)
+    sentiment_dict = checkSentiment(post_dict, site_dict, sentiment_dict)
     print_sentiment_dict(sentiment_dict)
     #newspaper = getNewspaperContent()
-    site_dict = getPostContent(sub_name, r, site_list, site_dict)
-    crosscheck(site_list, site_dict)
+    site_sentiment_dict = crosscheck(sentiment_dict)
+    print_site_sentiment_dict(site_sentiment_dict)
+    print_pos_comment_dict(comments_dict, sentiment_dict)
     return 'done'
 
 sub = input('Which subreddit do you want to analyse? ')
