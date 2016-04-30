@@ -58,13 +58,9 @@ class LinkedArray:
     # deletes all the nodes in the LinkedArrays
 
     def makeEmpty(self):
-        self.current = self.end
-
-        while self.end.getPrev():
-            self.current = self.end.getPrev()
-
-        self.end = None
         self.start = None
+        self.end = None
+		self.current = None
 
     def getSize(self):
         return self.size
