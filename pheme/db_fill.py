@@ -3,47 +3,37 @@ from urllib.parse import urlparse
 import re
 import json
 import requests
-from models import Comment, Post
+from .app import models
 from textblob import TextBlob
+from .app import views
+import datetime
+
+useless = ['and', 'the', 'a', 'i']
 
 class sub():
 	def __init__(self, sub_name):
 		subscribers = 0
-		name = sube_name
-
-class sentiment():
-	def __init__(self):
-		pos = 0
-		neg = 0
-		neut = 0
-		sent = 0
-
-class edited():
-	def __init__(self):
-		edited = false
-		lastEdited = ''
+		name = sub_name
 
 class site():
 	def __init__(self):
 		domain = ''
 		url = ''
 
-subs = []
-articles = []
-users = []
-sites = []
-
 #read in keys from text file
 def keys():
-	key = []
+	key_list = []
 	with open('keys.txt') as keys_file:
-		key = keys_file.readlines()
-	return key
+		key_list = keys_file.readlines()
+	for key in key_list:
+		key.strip()
+	return key_list
 
 #login to reddit using praw
-def redditlogin(key):
+def redditlogin(key_list):
+	print(key_list)
 	r = praw.Reddit('lily')
-	r.login(key[1], key[2], disable_warning=True)
+	r.login(key_list[0].strip(), key_list[1].strip(), disable_warning=True)
 	return r
 
 def getTime(time):
@@ -58,22 +48,30 @@ def getSite(post):
 
 def getSent(text):
 	text = TextBlob(text)
-	return text.sentiment
+	return text.sentiment.polarity
+
+def getKeywords(text, useless):
+	text = TextBlob(text)
+	for word in text.words:
+		for bad in useless:
+			if word is bad:
+				text.remove(word)
+	return text
 
 
 def fillPosts(sub_name, r):
-	posts = reddit.get_subreddit(sub_name)
-	for post in posts:
+	posts = r.get_subreddit(sub_name)
+	for post in posts.get_hot(limit=5):
 		site = getSite(post)
-		sentiment = getSent(
 		comments = getComments(post)
 		dt = getTime(post.created)
 		subreddit = sub(sub_name)
 		edited = getTime(post.edited)
 		sentiment = fillComments(post, comments, r, site, subreddit, dt)
 			
-		to_add = Post(post, sentiment, comments, site, subreddit, post.author, dt, edited, post.score, post.gilded)
+		to_add = app.models.Post(post.id, sentiment, comments, site, subreddit, post.author, dt, edited, post.score, post.gilded)
 		#add to_add to db
+		postsdb.session.add(to_add)
 		
 
 def fillComments(post, comments, r, site, subreddit, dt):
@@ -82,14 +80,28 @@ def fillComments(post, comments, r, site, subreddit, dt):
 	for comment in comments:
 		sentiment = getSent(comment.body)
 		edited = getTime(comment.edited)		
-		aillComments(post, comments, r, site, subreddit, dt)
+		keywords = getKeywords(comment.body, useless)
 
-		to_add = Comment(comment, sentiment, post, site, subreddit, comment.author, dt, edited, comment.score, comment.gilded)
+		to_add = app.models.Comment(comment.body, sentiment, post.id, site, subreddit, comment.author, dt, edited, comment.score, comment.gilded, keywords)
 		
-		sentiment_total += sentiment.polarity
+		commentsdb.session.add(to_add)
+
+		sentiment_total += sentiment
 		counter += 1
 	sentiment_total = sentiment_total / counter
 
 def filldb(subs, r):
 	for sub in subs:
 		fillPosts(sub, r)
+
+def main():
+	subs = ['technology', 'news', 'worldnews', 'upliftingnews']
+	postsdb.create_all()
+	commentsdb.create_all()
+	key = keys()
+	r = redditlogin(key)
+	filldb(subs, r)
+	postsdb.commit()
+	commentsdb.commit()
+
+main()
