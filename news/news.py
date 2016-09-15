@@ -1,6 +1,3 @@
-import newspaper
-from newspaper import Article
-from newspaper import fulltext
 import praw
 from urllib.parse import urlparse
 import re
@@ -17,7 +14,7 @@ def keys():
 #login to reddit using praw
 def redditlogin(key):
     r = praw.Reddit('news checker')
-    r.login(key[1], key[2], disable_warning=True)
+    r.login(key[1].strip(), key[2].strip(), disable_warning=True)
     return r
 
 #read in known sites from text file
